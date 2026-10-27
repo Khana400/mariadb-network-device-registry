@@ -406,14 +406,3 @@ Instead, we want to determine:
 5. When they may not be necessary.
 
 The final repository should act as both a working database project and a tutorial that another student can reproduce and learn from.
-
----
-
-## Current Project Status
-
-- [x] Project topic selected
-- [x] GitHub repository created
-- [x] README created
-- [ ] Team members added
-- [ ] Docker environment configured
-- [ ] MariaDB running
