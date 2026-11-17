@@ -1,7 +1,27 @@
 Checking that the project works
-This is the guide I would use if I had to open the repository on another computer and check whether it is ready to submit. The main [README](../README.md) tells you how to set everything up. Here, the focus is on checking the setup and writing down what actually happened.
+This page has two purposes: it records the setup checks that we actually completed and gives another student the commands to repeat those checks. The main [README](../README.md) explains the whole project.
+Checks completed on 17 November 2026
+We ran these checks using our existing Windows laptop with Ubuntu/WSL2 and the project's running MariaDB Docker container. To avoid touching the original experiment data, we created a separate database called network_registry_setup_check.
 
-The project was tested during development, including a run where all five Python tests passed. However, we have not yet recorded a complete installation test from a separate, clean environment. The spaces at the end of this page are intentionally blank. Whoever performs the checks should fill them in with the real results rather than marking everything as passed in advance.
+This was a clean database check, not a full fresh installation. We did not clone the repository into a new folder, and we did not create a new Docker volume. That extra check is still pending.
+Docker and the project files — passed
+The command docker compose config --quiet completed without errors. The repository was accessible on GitHub without logging in, and the team confirmed that its commits were uploaded.
+Database creation — passed
+We created network_registry_setup_check and ran the exact sql/baseline_schema.sql and sql/native_schema.sql files against it. The two expected tables were created.
+Sample records — passed
+We ran sql/sample_data.sql once against the separate database and checked the row counts. The output reported 2 records in devices_baseline and 2 in devices_native. The sample hostnames were router-01 and laptop-01.
+SQL experiments — passed
+We ran the following scripts against the separate database:
+- experiment_ip_sorting.sql — showed text sorting in the baseline table and numerical ordering with INET4.
+- experiment_ip_validation.sql — the baseline accepted 999.999.999.999 and MariaDB rejected the INET4 insertion with the expected ERROR 1292. The transaction was rolled back.
+- experiment_returning.sql — returned inserted data and rolled back temporary records.
+- experiment_intersect_except.sql — found shared hostnames and the two hostnames present in only one table, then rolled back temporary records.
+Automated tests — passed on our main development database
+After the team uploaded its commits, we ran python -m unittest discover -s tests -v. All five tests passed in 0.256 seconds. This test run used the existing development configuration, not the isolated setup-check database.
+Saved benchmark results and graphs — available
+The repository contains the 10,000- and 100,000-row benchmark CSV files, the UUID storage measurements, and five generated graphs. We created and reviewed the graphs during development. We did not rerun the full bulk-storage experiments or benchmarks as part of this separate database check.
+Still to verify
+A full end-to-end run from a separate fresh Git checkout and a new Docker volume has not been completed. Machine CPU/RAM specifications were also not recorded in this verification run. A person performing that extra check can use the steps below and add their real results at the end.
 First, open the right folder
 On our development laptop, the repository is inside Ubuntu/WSL. Open an Ubuntu terminal and enter:
 cd ~/projects/mariadb-network-device-registry
@@ -62,7 +82,7 @@ With MariaDB running, run:
 python -m unittest discover -s tests -v
 The five tests cover the schema types, IPv4 validation, IP address ordering, INSERT ... RETURNING, and INTERSECT/`EXCEPT`.
 
-The earlier development run passed all five tests in 0.159 seconds. Do not use that number as your own test result. Record what your terminal says, even if a test fails. If it fails, save the error message so it can be fixed.
+Our latest recorded run passed all five tests in 0.256 seconds. Do not use that time as your own result; timing can be different on another machine. Record what your terminal says, even if a test fails. If it fails, save the error message so it can be fixed.
 7. Check the saved measurements and graphs
 The numbers used in our report are stored in CSV files. Confirm that the files exist:
 ls -lh results/storage_measurements.csv results/benchmark_10000.csv results/benchmark_100000.csv
@@ -100,28 +120,32 @@ Before uploading anything, check:
 git status --short
 git check-ignore .env .venv
 These commands only show information; they do not upload files. .env and .venv should appear in the ignored list. The .env file must stay private because it contains the database password.
-Verification notes — fill these in after running the commands
-Person checking: __________________________
-Date: __________________________
-Existing setup or separate fresh setup? __________________________
-Computer / operating system: __________________________
-Git version: __________________________
-Python version: __________________________
-Docker and Compose versions: __________________________
-MariaDB version: __________________________
+Repeating our isolated-database check (without deleting your data)
+If you already have the MariaDB container running, these commands create a new database instead of modifying your original network_registry database. Run them from the project folder. If the check database already exists, do not insert the sample data again.
 
-Project folders found: Not checked / Passed / Failed
-Docker configuration: Not checked / Passed / Failed
-Container started: Not checked / Passed / Failed
-Database schemas: Not checked / Passed / Failed
-Sample records: Not checked / Passed / Failed
-Five Python tests: Not checked / Passed / Failed
-Five graphs: Not checked / Passed / Failed
-SQL experiments (optional): Not checked / Passed / Failed / Not run
-Git ignore check: Not checked / Passed / Failed
+Create the separate database once:
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" -e "CREATE DATABASE network_registry_setup_check;"'
+Run the two schema scripts and the sample-data script against the separate database:
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/baseline_schema.sql
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/native_schema.sql
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/sample_data.sql
+Check the row counts:
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' <<'SQL'
+SELECT 'Traditional' AS implementation, COUNT(*) AS total_devices
+FROM devices_baseline
+UNION ALL
+SELECT 'MariaDB Native', COUNT(*)
+FROM devices_native;
+SQL
+The expected result is 2 rows in each table when run on a newly created database.
 
-Test output or screenshot filename: __________________________
-Any error messages: __________________________
-What you changed to fix an issue: __________________________
-Anything that still needs to be fixed: __________________________
+To repeat the four shorter SQL experiments against the check database:
+# Intentional error 1292 is expected from INET4 validation
+docker compose exec -T mariadb sh -c 'mariadb --force -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/experiment_ip_validation.sql
 
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/experiment_ip_sorting.sql
+
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/experiment_returning.sql
+
+docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/experiment_intersect_except.sql
+Important: --force is only used for the validation script because the rejected INET4 value is expected. For all other setup scripts, an error should be investigated.

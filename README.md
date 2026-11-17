@@ -1,3 +1,4 @@
+A project for area 1, "SQL that saves you work" for the MariaDB student database projects, 2026-09.
 MariaDB Network Device Registry
 Introduction to Database Systems — Constructor University
 MariaDB Student Project 2026, Tier A: SQL That Saves You Work
@@ -13,6 +14,8 @@ This repository includes our SQL scripts, the Python code we used for benchmarki
 Team: Kevin Kotarja, Eda Zekjiri, Rasul Sharifov, and Elena Lazic.
 
 The original project topic is described on the MariaDB Student Database Projects page.
+
+Start here: Set up the database · Run the SQL experiments · See the results · [Read the setup checks](docs/setup_verification.md)
 What we tried to find out
 Our main question was whether using MariaDB's built-in SQL features could make our registry simpler, more reliable, or faster than using ordinary SQL data types and queries.
 
@@ -118,8 +121,10 @@ SHOW TABLES;
 SELECT * FROM devices_baseline;
 SELECT * FROM devices_native;
 You should find the two main tables and the sample devices. The larger experiment tables only appear after running their scripts. Type exit; to leave the database client.
+Setup check we completed
+On 17 November 2026, we checked the SQL setup in a separate database called network_registry_setup_check inside our existing MariaDB container. Both schema scripts ran, the sample-data script created two rows in each table, and the IPv4 validation, IPv4 sorting, INSERT ... RETURNING, and INTERSECT/`EXCEPT` scripts worked there. We also ran the five Python tests on our main development setup; all five passed.
 
-If you're checking the project for submission, the [setup verification guide](docs/setup_verification.md) has extra checks and a place to write down what actually passed.
+This is useful evidence that the scripts work with a newly created database, but it is not yet a completely fresh Git clone with a new Docker container and volume. We have not claimed to have tested that separately. The commands, results, and remaining checks are recorded in the [setup verification guide](docs/setup_verification.md).
 Experiment 1: Can INET4 catch a wrong address?
 We started with something simple. We tried to insert 999.999.999.999 as a device's IP address. It has four parts, but it is not a valid IPv4 address because each part must be between 0 and 255.
 
@@ -180,6 +185,8 @@ docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD"
 These scripts use their own test tables; rerunning them recreates those tables. Allow extra database space for the bigger tests.
 
 Our storage measurements are also saved in [`results/storage_measurements.csv`](results/storage_measurements.csv).
+
+The next graph shows the observed percentage difference at each dataset size. Notice that the 10,000-row measurement showed no reduction in allocated pages.
 
 Experiment 4: Timing different database operations
 Next, we used Python to measure how the two versions performed. The program is [`scripts/benchmark.py`](scripts/benchmark.py). It connects to MariaDB with PyMySQL, creates matching test data, and records timings with time.perf_counter().
@@ -278,7 +285,7 @@ We added tests/test_database.py so we would not have to repeat every small check
 
 To run them, start MariaDB, activate the Python virtual environment, and enter:
 python -m unittest discover -s tests -v
-In the run we recorded during development, all five tests passed in 0.159 seconds. The tests use transactions and rollbacks to avoid leaving test devices behind. Of course, five tests do not cover every possible input; they check the behaviors we focused on for this project.
+In the latest run after the team uploaded its files on 17 November 2026, all five tests passed in 0.256 seconds. An earlier run also passed in 0.159 seconds. The tests use transactions and rollbacks to avoid leaving test devices behind. Of course, five tests do not cover every possible input; they check the behaviors we focused on for this project.
 Graphs and saved results
 We used Matplotlib to turn our CSV results into pictures. All five graphs are created by scripts/plot_results.py, which reads the saved measurements from results/.
 
@@ -298,7 +305,17 @@ Second, the sorting benchmark compares two queries that do not work in exactly t
 
 Third, our storage measurements are InnoDB's reported allocated pages, not exact row sizes. We also recorded one storage result per dataset size. That is why the 0% difference at 10,000 records is just as important to report as the larger savings at 500,000 records.
 
-The database is focused on IPv4 only; there is no IPv6 support or full website interface. The automated tests check the main behaviors, not every possible error case. We have also not recorded a full fresh-installation verification from a separate clean environment yet.
+The database is focused on IPv4 only; there is no IPv6 support or full website interface. The automated tests check the main behaviors, not every possible error case. We verified the schema and shorter experiments using a new database in our existing container on 17 November 2026. We have not tested the full setup from a separate fresh clone and new Docker volume yet.
+When we would not use these features
+The native types helped in our experiments, but we would not automatically choose them for every project.
+
+UUID: If a small application already uses integer IDs, switching everything to UUID just for this comparison may create extra work. Native UUID can also require checking compatibility when moving data to a different database system.
+
+INET4: This type is for IPv4. A registry that also needs IPv6 would need a different column design, for example INET6. Text might also be necessary if an application stores addresses together with other information instead of storing only the IP address.
+
+INSERT ... RETURNING: It is useful when the program needs the inserted values right away. If the application only needs to save a row and move on, a normal INSERT is enough.
+
+INTERSECT and EXCEPT: They read naturally for comparing sets of values, but JOIN and NOT EXISTS are still useful, especially for more complicated comparisons. We did not prove one approach faster than the other.
 A couple of issues we ran into
 While setting up the project, Docker temporarily stopped working through WSL. Checking the WSL integration and restarting Docker Desktop fixed it in our case. We also had some confusion about where VS Code was creating folders, which is why we kept the SQL files under sql/ and made separate scripts/, tests/, results/, and docs/ folders.
 
@@ -330,4 +347,43 @@ We used these resources to understand the SQL features and tools:
 - Docker documentation
 - Python documentation
 - Matplotlib documentation
-The [setup verification guide](docs/setup_verification.md) should be filled in with the real output from a separate check before the final submission.
+Our [setup verification guide](docs/setup_verification.md) records the checks we completed on 17 November 2026 and clearly lists what still needs testing in a completely fresh installation.
+
+
+## Experimental Graphs
+
+We created five graphs to make our experimental results easier to understand. All graphs were generated using Python and Matplotlib, based on the measurements we collected during our experiments.
+
+### 1. UUID Storage Comparison
+
+This graph compares how much storage the traditional CHAR(36) and native UUID tables used with 10,000, 100,000, and 500,000 records.
+
+![UUID Storage Comparison](results/graphs/uuid_storage_comparison.png)
+
+### 2. UUID Storage Reduction
+
+This graph shows the percentage of storage saved when using the native UUID data type. The difference became more noticeable with larger datasets.
+
+![UUID Storage Reduction](results/graphs/uuid_storage_reduction.png)
+
+### 3. Insertion Performance
+
+This graph compares how long it took to insert records into the traditional and native tables.
+
+![Insertion Performance](results/graphs/insertion_performance.png)
+
+### 4. UUID Lookup Performance
+
+This graph compares how long it took to perform 200 UUID lookups in each database implementation.
+
+![UUID Lookup Performance](results/graphs/uuid_lookup_performance.png)
+
+### 5. IPv4 Sorting Performance
+
+This graph compares how quickly both implementations could retrieve 1,000 numerically sorted IP addresses.
+
+![IPv4 Sorting Performance](results/graphs/ip_sorting_performance.png)
+
+The performance graphs show the average results from five benchmark rounds. The error bars represent the standard deviation, which helps us see how much the measurements varied.
+
+These results describe what happened in our testing environment. They do not mean that native data types will always be faster in every database.
