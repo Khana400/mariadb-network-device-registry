@@ -280,12 +280,38 @@ We also tried an INNER JOIN to find the shared names and NOT EXISTS to find the 
 
 The test records were rolled back when the experiment finished:
 docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry' < sql/experiment_intersect_except.sql
-Automated tests
-We added tests/test_database.py so we would not have to repeat every small check manually. It contains five tests for the schemas, invalid IPv4 values, IP sorting, INSERT ... RETURNING, and INTERSECT/`EXCEPT`.
 
-To run them, start MariaDB, activate the Python virtual environment, and enter:
+## Automated tests
+
+We added `tests/test_database.py` so we would not have to repeat every small check manually.
+
+Originally, we created five automated tests. Later, we added three more to check how MariaDB handles invalid UUIDs, IPv4 boundary values, and duplicate hostnames.
+
+The eight tests cover:
+
+1. Database schema and column types.
+2. Invalid IPv4 address validation.
+3. IPv4 address sorting.
+4. INSERT ... RETURNING.
+5. INTERSECT and EXCEPT.
+6. Invalid UUID validation.
+7. IPv4 boundary values.
+8. Duplicate hostnames with INTERSECT and EXCEPT.
+
+To run the tests, start MariaDB, activate the Python virtual environment, and enter:
+
+```bash
 python -m unittest discover -s tests -v
-In the latest run after the team uploaded its files on 17 November 2026, all five tests passed in 0.256 seconds. An earlier run also passed in 0.159 seconds. The tests use transactions and rollbacks to avoid leaving test devices behind. Of course, five tests do not cover every possible input; they check the behaviors we focused on for this project.
+```
+
+On 17 November 2026, we ran all eight tests successfully.
+
+**Result: 8 tests passed in 0.166 seconds.**
+
+The tests use transactions and rollbacks to avoid leaving temporary devices in the database.
+
+Although all eight tests passed, they do not cover every possible input. They focus on the MariaDB features we investigated in this project.
+
 Graphs and saved results
 We used Matplotlib to turn our CSV results into pictures. All five graphs are created by scripts/plot_results.py, which reads the saved measurements from results/.
 
@@ -296,6 +322,45 @@ python scripts/plot_results.py
 You should find the PNG files in results/graphs/. You can also look at the experiment screenshots in results/screenshots/.
 
 The full explanation of the numbers is in [Experiment Results](docs/experiment_results.md).
+
+## Experimental Graphs
+
+We created five graphs to make our experimental results easier to understand. All graphs were generated using Python and Matplotlib, based on the measurements we collected during our experiments.
+
+### 1. UUID Storage Comparison
+
+This graph compares how much storage the traditional CHAR(36) and native UUID tables used with 10,000, 100,000, and 500,000 records.
+
+![UUID Storage Comparison](results/graphs/uuid_storage_comparison.png)
+
+### 2. UUID Storage Reduction
+
+This graph shows the percentage of storage saved when using the native UUID data type. The difference became more noticeable with larger datasets.
+
+![UUID Storage Reduction](results/graphs/uuid_storage_reduction.png)
+
+### 3. Insertion Performance
+
+This graph compares how long it took to insert records into the traditional and native tables.
+
+![Insertion Performance](results/graphs/insertion_performance.png)
+
+### 4. UUID Lookup Performance
+
+This graph compares how long it took to perform 200 UUID lookups in each database implementation.
+
+![UUID Lookup Performance](results/graphs/uuid_lookup_performance.png)
+
+### 5. IPv4 Sorting Performance
+
+This graph compares how quickly both implementations could retrieve 1,000 numerically sorted IP addresses.
+
+![IPv4 Sorting Performance](results/graphs/ip_sorting_performance.png)
+
+The performance graphs show the average results from five benchmark rounds. The error bars represent the standard deviation, which helps us see how much the measurements varied.
+
+These results describe what happened in our testing environment. They do not mean that native data types will always be faster in every database.
+
 Problems and limits we noticed
 A few things are worth keeping in mind when reading our results.
 
@@ -350,40 +415,3 @@ We used these resources to understand the SQL features and tools:
 Our [setup verification guide](docs/setup_verification.md) records the checks we completed on 17 November 2026 and clearly lists what still needs testing in a completely fresh installation.
 
 
-## Experimental Graphs
-
-We created five graphs to make our experimental results easier to understand. All graphs were generated using Python and Matplotlib, based on the measurements we collected during our experiments.
-
-### 1. UUID Storage Comparison
-
-This graph compares how much storage the traditional CHAR(36) and native UUID tables used with 10,000, 100,000, and 500,000 records.
-
-![UUID Storage Comparison](results/graphs/uuid_storage_comparison.png)
-
-### 2. UUID Storage Reduction
-
-This graph shows the percentage of storage saved when using the native UUID data type. The difference became more noticeable with larger datasets.
-
-![UUID Storage Reduction](results/graphs/uuid_storage_reduction.png)
-
-### 3. Insertion Performance
-
-This graph compares how long it took to insert records into the traditional and native tables.
-
-![Insertion Performance](results/graphs/insertion_performance.png)
-
-### 4. UUID Lookup Performance
-
-This graph compares how long it took to perform 200 UUID lookups in each database implementation.
-
-![UUID Lookup Performance](results/graphs/uuid_lookup_performance.png)
-
-### 5. IPv4 Sorting Performance
-
-This graph compares how quickly both implementations could retrieve 1,000 numerically sorted IP addresses.
-
-![IPv4 Sorting Performance](results/graphs/ip_sorting_performance.png)
-
-The performance graphs show the average results from five benchmark rounds. The error bars represent the standard deviation, which helps us see how much the measurements varied.
-
-These results describe what happened in our testing environment. They do not mean that native data types will always be faster in every database.
