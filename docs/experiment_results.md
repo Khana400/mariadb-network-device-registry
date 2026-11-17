@@ -140,4 +140,96 @@ The test file tests/test_database.py has five automated checks: database column 
 python -m unittest discover -s tests -v
 Looking back at all the results, INET4 was especially useful for this kind of database, since IP addresses are not really ordinary text. Native UUID storage also helped on the larger datasets we tested. For the performance experiment, we learned that reading the query plan matters: a faster time is interesting, but knowing that one query avoids a filesort helps explain it.
 
+## Benchmark Environment
+
+We also recorded information about the computer and database environment used for our performance experiments.
+
+This is important because database performance can change depending on the computer, available memory, and database settings. Someone running our benchmarks on a different computer might not get exactly the same results.
+
+### Computer and Software
+
+Our project was developed on a Windows laptop using Ubuntu through WSL2. MariaDB was running inside a Docker container.
+
+The computer and software environment included:
+
+**Processor:** 12th Gen Intel Core i7-1255U
+
+**Logical processors available to WSL2:** 12
+
+**Memory available to WSL2:** 7.6 GiB
+
+**Swap memory:** 2.0 GiB
+
+**MariaDB version:** 11.8.9
+
+**Database engine:** InnoDB
+
+The memory values above describe the WSL2 environment, not necessarily the total physical memory installed in the laptop.
+
+### MariaDB Configuration
+
+We also checked several MariaDB settings on 17 November 2026.
+
+The results were:
+
+**InnoDB buffer pool:** 134,217,728 bytes (128 MiB)
+
+**innodb_flush_log_at_trx_commit:** 1
+
+**sync_binlog:** 0
+
+**SQL mode:** STRICT_TRANS_TABLES, ERROR_FOR_DIVISION_BY_ZERO, NO_AUTO_CREATE_USER, NO_ENGINE_SUBSTITUTION
+
+The buffer pool is memory MariaDB uses to keep database pages available for faster access.
+
+The other settings affect transaction handling and SQL behavior.
+
+These settings were recorded after our main experiments. We did not separately save a configuration snapshot during the original benchmark runs, so we cannot prove that every setting remained unchanged throughout development.
+
+### Reproducing the Performance Benchmarks
+
+We improved our Python benchmark script so that another student can choose the dataset size without editing the source code.
+
+For 10,000 records:
+
+```bash
+python scripts/benchmark.py --records 10000 --output results/my_test_10000.csv
+```
+
+For 100,000 records:
+
+```bash
+python scripts/benchmark.py --records 100000 --output results/my_test_100000.csv
+```
+
+The `--output` option lets users save their results under a different filename. This is useful because it prevents the original CSV measurements from being overwritten.
+
+The program performs five benchmark rounds and measures insertion time, UUID lookup time, and numerical IPv4 sorting time.
+
+### Checking the Improved Script
+
+After adding the new command-line options, we ran a smaller benchmark using 1,000 records.
+
+The command was:
+
+```bash
+python scripts/benchmark.py --records 1000 --output results/benchmark_smoke_1000.csv
+```
+
+The script completed all five rounds and saved its results successfully.
+
+This smaller experiment was used to check that the updated program worked correctly. It does not replace our original 10,000- and 100,000-record benchmark results.
+
+One interesting observation was that the native UUID lookups were slightly slower in the 1,000-record check. This reminded us that performance results can vary and that native data types are not automatically faster in every situation.
+
+### Limitations
+
+Our results were measured on one development computer using Docker and WSL2.
+
+We repeated the timing measurements five times, but that is still a relatively small number of repetitions.
+
+Caching, background processes, database settings, and hardware differences may affect execution times.
+
+For this reason, our results should be understood as measurements from our own testing environment rather than guaranteed performance improvements for every MariaDB installation.
+
 If you repeat the experiments on another machine, please record the MariaDB version, the dataset size, and the results you actually get. The timings and page allocations may differ. Also, be aware that the Python benchmark recreates its own tables and overwrites the selected result CSV, so keep a copy if you want to compare runs.
