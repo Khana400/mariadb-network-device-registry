@@ -219,9 +219,33 @@ To repeat the benchmark, first install the Python requirements:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-Make sure MariaDB is running. In scripts/benchmark.py, set RECORD_COUNT to 10000 and set RESULTS_FILE to RESULTS_DIR / "benchmark_10000.csv" for the smaller test. Use 100000 and benchmark_100000.csv for the larger test. Then run:
-python scripts/benchmark.py
-Be careful: the benchmark recreates its experiment tables and overwrites its chosen CSV result file. Copy an older CSV somewhere safe before running it again if you want to keep those measurements.
+### Running the Performance Benchmarks
+
+We also improved our Python benchmark script to make it easier to use. Originally, we had to open the Python file and change the number of records manually. Now we can choose the dataset size directly from the terminal.
+
+To run the benchmark with 10,000 records:
+
+```bash
+python scripts/benchmark.py --records 10000 --output results/my_test_10000.csv
+```
+
+To run it with 100,000 records:
+
+```bash
+python scripts/benchmark.py --records 100000 --output results/my_test_100000.csv
+```
+
+The `--records` option selects how many devices the script generates.
+
+The `--output` option lets us choose where to save the results. We recommend using a new filename so the original experiment results are not overwritten.
+
+Each benchmark runs five rounds and compares insertion time, UUID lookup time, and numerical IPv4 sorting.
+
+The script recreates its two benchmark tables each time it runs, but it does not change the original device registry tables.
+
+We also tested the improved script with 1,000 records to make sure the new options worked correctly. All five rounds completed successfully.
+
+Our original results with 10,000 and 100,000 records are still available in the `results` folder.
 
 The stored results are in [`benchmark_10000.csv`](results/benchmark_10000.csv) and [`benchmark_100000.csv`](results/benchmark_100000.csv).
 
