@@ -14,7 +14,7 @@ Operations tested:
 Each experiment is repeated five times.
 Results are saved to results/benchmark.csv.
 """
-
+import argparse 
 import csv
 import ipaddress
 import os
@@ -45,16 +45,49 @@ if not DB_PASSWORD:
         "Database password is missing from the .env file."
     )
 
-RECORD_COUNT = 100000
+# Allow the user to choose the benchmark size.
+parser = argparse.ArgumentParser(
+    description="Compare traditional and native MariaDB data types"
+)
+
+parser.add_argument(
+    "--records",
+    type=int,
+    default=100000,
+    help="Number of devices to generate (default: 100000)"
+)
+
+parser.add_argument(
+    "--output",
+    type=str,
+    default=None,
+    help="Optional CSV output filename"
+)
+
+args = parser.parse_args()
+
+RECORD_COUNT = args.records
+
 ROUNDS = 5
 BATCH_SIZE = 250
 LOOKUP_COUNT = 200
 SORT_LIMIT = 1000
 
+if RECORD_COUNT < SORT_LIMIT:
+    parser.error(
+        "--records must be at least 1000 for this benchmark."
+    )
+
 RESULTS_DIR = PROJECT_ROOT / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
-RESULTS_FILE = RESULTS_DIR / "benchmark_100000.csv"
+# Save the results using the selected record count.
+if args.output:
+    RESULTS_FILE = PROJECT_ROOT / args.output
+else:
+    RESULTS_FILE = RESULTS_DIR / f"benchmark_{RECORD_COUNT}.csv"
+
+RESULTS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
 # -----------------------------------------------------
