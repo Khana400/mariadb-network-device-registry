@@ -204,7 +204,7 @@ Type `exit;` to leave the MariaDB client.
 
 ## Setup check we completed
 
-On 17 November 2026, we checked the SQL setup in a separate database called network_registry_setup_check inside our existing MariaDB container. Both schema scripts ran, the sample-data script created two rows in each table, and the IPv4 validation, IPv4 sorting, INSERT ... RETURNING, and INTERSECT/`EXCEPT` scripts worked there. We also ran the eight Python tests on our main development setup; all five passed.
+On 17 November 2026, we checked the SQL setup in a separate database called network_registry_setup_check inside our existing MariaDB container. Both schema scripts ran, the sample-data script created two rows in each table, and the IPv4 validation, IPv4 sorting, INSERT ... RETURNING, and INTERSECT/`EXCEPT` scripts worked there. We also ran the eight Python tests on our main development setup; all eight passed.
 
 This is useful evidence that the scripts work with a newly created database, but it is not yet a completely fresh Git clone with a new Docker container and volume. We have not claimed to have tested that separately. The commands, results, and remaining checks are recorded in the [setup verification guide](docs/setup_verification.md).
 
@@ -467,7 +467,7 @@ python -m unittest discover -s tests -v
 
 On 17 November 2026, we ran all eight tests successfully.
 
-**Result: 8 tests passed in 0.166 seconds.**
+**Result: 8 tests passed successfully.**
 
 The tests use transactions and rollbacks to avoid leaving temporary devices in the database.
 

@@ -17,7 +17,7 @@ We ran the following scripts against the separate database:
 - experiment_returning.sql — returned inserted data and rolled back temporary records.
 - experiment_intersect_except.sql — found shared hostnames and the two hostnames present in only one table, then rolled back temporary records.
 Automated tests — passed on our main development database
-After the team uploaded its commits, we ran python -m unittest discover -s tests -v. All five tests passed in 0.256 seconds. This test run used the existing development configuration, not the isolated setup-check database.
+After the team uploaded its commits, we ran `python -m unittest discover -s tests -v`. Our original five tests passed in 0.256 seconds. Later, we added three more tests covering invalid UUIDs, IPv4 boundary values, and duplicate hostnames. We ran the updated test suite on 17 November 2026, and all eight tests passed. These test runs used our existing development database, not the isolated setup-check database.
 Saved benchmark results and graphs — available
 The repository contains the 10,000- and 100,000-row benchmark CSV files, the UUID storage measurements, and five generated graphs. We created and reviewed the graphs during development. We did not rerun the full bulk-storage experiments or benchmarks as part of this separate database check.
 Still to verify
@@ -80,9 +80,9 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 With MariaDB running, run:
 python -m unittest discover -s tests -v
-The five tests cover the schema types, IPv4 validation, IP address ordering, INSERT ... RETURNING, and INTERSECT/`EXCEPT`.
+The eight tests cover the schema types, IPv4 validation, IP address ordering, INSERT ... RETURNING, INTERSECT/EXCEPT, invalid UUID validation, IPv4 boundary values, and duplicate hostname handling.
 
-Our latest recorded run passed all five tests in 0.256 seconds. Do not use that time as your own result; timing can be different on another machine. Record what your terminal says, even if a test fails. If it fails, save the error message so it can be fixed.
+One of our first runs passed all five tests in 0.256 seconds and our latest recorded run on 17 November 2026 passed all eight tests in 0.174 seconds. Do not use these times as your own result; timing can be different on another machine. Record what your terminal says, even if a test fails. If it fails, save the error message so it can be fixed.
 7. Check the saved measurements and graphs
 The numbers used in our report are stored in CSV files. Confirm that the files exist:
 ls -lh results/storage_measurements.csv results/benchmark_10000.csv results/benchmark_100000.csv

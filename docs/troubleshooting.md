@@ -63,7 +63,7 @@ The automated tests fail
 The test program needs to connect to MariaDB, so make sure the container is running and .env contains the correct password.
 docker compose ps
 python -m unittest discover -s tests -v
-Run the tests from the project folder with the virtual environment active. We have a recorded development run where all five tests passed, but that does not mean every future test run will automatically pass.
+Run the tests from the project folder with the virtual environment active. Our original five tests passed, and after adding three more tests, we ran the updated suite on 17 November 2026. All eight tests passed successfully in 0.174 seconds. This does not guarantee that every future test run will pass.
 
 If a test fails, keep the whole error output. The name of the failing test usually tells you whether the issue is with a connection, a data type, or a particular SQL operation.
 A command can't find sql/ or results/
