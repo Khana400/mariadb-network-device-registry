@@ -3,7 +3,10 @@ This page has two purposes: it records the setup checks that we actually complet
 Checks completed on 17 November 2026
 We ran these checks using our existing Windows laptop with Ubuntu/WSL2 and the project's running MariaDB Docker container. To avoid touching the original experiment data, we created a separate database called network_registry_setup_check.
 
-This was a clean database check, not a full fresh installation. We did not clone the repository into a new folder, and we did not create a new Docker volume. That extra check is still pending.
+Our first verification on 17 November 2026 used a newly created database inside our existing MariaDB container. At that time, we had not tested the project using a fresh GitHub clone or a new Docker volume.
+
+We completed that additional verification on 19 November 2026 using a separate clone, a new MariaDB container, and a separate Docker volume. The results are documented at the bottom of this file.
+
 Docker and the project files — passed
 The command docker compose config --quiet completed without errors. The repository was accessible on GitHub without logging in, and the team confirmed that its commits were uploaded.
 Database creation — passed
@@ -20,8 +23,17 @@ Automated tests — passed on our main development database
 After the team uploaded its commits, we ran `python -m unittest discover -s tests -v`. Our original five tests passed in 0.256 seconds. Later, we added three more tests covering invalid UUIDs, IPv4 boundary values, and duplicate hostnames. We ran the updated test suite on 17 November 2026, and all eight tests passed. These test runs used our existing development database, not the isolated setup-check database.
 Saved benchmark results and graphs — available
 The repository contains the 10,000- and 100,000-row benchmark CSV files, the UUID storage measurements, and five generated graphs. We created and reviewed the graphs during development. We did not rerun the full bulk-storage experiments or benchmarks as part of this separate database check.
-Still to verify
-A full end-to-end run from a separate fresh Git checkout and a new Docker volume has not been completed. Machine CPU/RAM specifications were also not recorded in this verification run. A person performing that extra check can use the steps below and add their real results at the end.
+
+## Follow-up verification
+
+After our first database check on 17 November 2026, we still needed to test the project using a fresh GitHub clone and a separate Docker volume.
+
+We completed this additional check on 19 November 2026. We created a new MariaDB container, set up both tables, inserted sample data, and successfully ran four SQL experiments.
+
+We also ran all eight automated tests in the fresh environment. All eight passed in 0.227 seconds.
+
+We did not repeat the large UUID storage experiments or performance benchmarks during this check. The computer specifications and benchmark settings are documented separately in `docs/experiment_results.md`.
+
 First, open the right folder
 On our development laptop, the repository is inside Ubuntu/WSL. Open an Ubuntu terminal and enter:
 cd ~/projects/mariadb-network-device-registry
@@ -82,7 +94,8 @@ With MariaDB running, run:
 python -m unittest discover -s tests -v
 The eight tests cover the schema types, IPv4 validation, IP address ordering, INSERT ... RETURNING, INTERSECT/EXCEPT, invalid UUID validation, IPv4 boundary values, and duplicate hostname handling.
 
-One of our first runs passed all five tests in 0.256 seconds and our latest recorded run on 17 November 2026 passed all eight tests in 0.174 seconds. Do not use these times as your own result; timing can be different on another machine. Record what your terminal says, even if a test fails. If it fails, save the error message so it can be fixed.
+Our original five-test run passed in 0.256 seconds. After adding three more tests, all eight tests passed in 0.174 seconds on 17 November 2026. During our fresh-installation verification on 19 November 2026, all eight tests passed again in 0.227 seconds. Do not use these times as your own result; timing can be different on another machine. Record what your terminal says, even if a test fails. If it fails, save the error message so it can be fixed.
+
 7. Check the saved measurements and graphs
 The numbers used in our report are stored in CSV files. Confirm that the files exist:
 ls -lh results/storage_measurements.csv results/benchmark_10000.csv results/benchmark_100000.csv
@@ -149,3 +162,19 @@ docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD"
 
 docker compose exec -T mariadb sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" network_registry_setup_check' < sql/experiment_intersect_except.sql
 Important: --force is only used for the validation script because the rejected INET4 value is expected. For all other setup scripts, an error should be investigated.
+
+## Fresh Installation Verification — 19 November 2026
+
+We also tested our project using a completely fresh GitHub clone.
+
+We cloned the repository into a separate folder and created a new MariaDB 11.8 container with its own Docker volume. To avoid conflicts with our original database, we used a separate Docker Compose configuration and port 3308 instead of 3307.
+
+We successfully created both database tables and inserted the sample devices. Both tables contained two records.
+
+We then ran the IPv4 sorting, IPv4 validation, INSERT ... RETURNING, and INTERSECT/EXCEPT experiments. All four produced the expected results.
+
+Finally, we installed the Python requirements in a new virtual environment and ran all eight automated tests against the fresh database. We changed the test connection port to 3308 in the temporary clone so the tests would connect to the new container.
+
+**Result: All 8 tests passed in 0.227 seconds, with no failures.**
+
+This confirmed that our database setup and main SQL features worked in a fresh installation. We did not repeat the large UUID storage experiments or performance benchmarks during this check.

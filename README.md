@@ -206,7 +206,17 @@ Type `exit;` to leave the MariaDB client.
 
 On 17 November 2026, we checked the SQL setup in a separate database called network_registry_setup_check inside our existing MariaDB container. Both schema scripts ran, the sample-data script created two rows in each table, and the IPv4 validation, IPv4 sorting, INSERT ... RETURNING, and INTERSECT/`EXCEPT` scripts worked there. We also ran the eight Python tests on our main development setup; all eight passed.
 
-This is useful evidence that the scripts work with a newly created database, but it is not yet a completely fresh Git clone with a new Docker container and volume. We have not claimed to have tested that separately. The commands, results, and remaining checks are recorded in the [setup verification guide](docs/setup_verification.md).
+On 19 November 2026, we also tested the project using a fresh GitHub clone, a new MariaDB 11.8 container, and a separate Docker volume. We used port 3308 to avoid conflicts with our original database.
+
+We successfully created both tables, inserted the sample devices, and reproduced the IPv4 validation, IPv4 sorting, INSERT ... RETURNING, and INTERSECT/EXCEPT experiments.
+
+We also installed the Python dependencies in a new virtual environment and ran all eight automated tests against the fresh database.
+
+**Result: All 8 tests passed in 0.227 seconds.**
+
+For this verification, we used a separate Docker Compose configuration and temporarily changed the test connection port to 3308. We did not rerun the large storage experiments or performance benchmarks.
+
+The full verification details are recorded in our [setup verification guide](docs/setup_verification.md).
 
 ## Experiment 1: Can INET4 catch a wrong address?
 
@@ -535,7 +545,7 @@ Second, the sorting benchmark compares two queries that do not work in exactly t
 
 Third, our storage measurements are InnoDB's reported allocated pages, not exact row sizes. We also recorded one storage result per dataset size. That is why the 0% difference at 10,000 records is just as important to report as the larger savings at 500,000 records.
 
-The database is focused on IPv4 only; there is no IPv6 support or full website interface. The automated tests check the main behaviors, not every possible error case. We verified the schema and shorter experiments using a new database in our existing container on 17 November 2026. We have not tested the full setup from a separate fresh clone and new Docker volume yet.
+The database is focused on IPv4 only; there is no IPv6 support or full website interface. The automated tests check the main behaviors, not every possible error case. We verified the schema and shorter experiments using a new database in our existing container on 17 November 2026. On 19 November 2026, we also tested the project using a fresh GitHub clone, a new MariaDB container, and a separate Docker volume. All eight automated tests passed in 0.227 seconds. However, we did not repeat the large UUID storage experiments or performance benchmarks during this verification.
 
 ## When we would not use these features
 The native types helped in our experiments, but we would not automatically choose them for every project.
