@@ -136,8 +136,13 @@ We liked how directly INTERSECT and EXCEPT describe the comparison. Still, this 
 File: sql/experiment_intersect_except.sql
 Screenshot: results/screenshots/experiment_6_intersect_except.png
 7. Automated checks and final thoughts
-The test file tests/test_database.py has five automated checks: database column types, invalid IPv4 validation, IP sorting, INSERT ... RETURNING, and INTERSECT/`EXCEPT`. We recorded a run where all five passed in 0.159 seconds. We still recommend running them again after any changes:
+The test file `tests/test_database.py` now contains eight automated checks: database column types, invalid IPv4 validation, IP sorting, INSERT ... RETURNING, INTERSECT/EXCEPT, invalid UUID validation, IPv4 boundary values, and duplicate hostname handling.
+
+Originally, we had five tests, and one of our earlier runs passed all five in 0.159 seconds. Later, we added three more tests and ran the updated suite on 17 November 2026. All eight tests passed successfully in 0.174 seconds.
+
+We recommend running the tests again after any changes:
 python -m unittest discover -s tests -v
+
 Looking back at all the results, INET4 was especially useful for this kind of database, since IP addresses are not really ordinary text. Native UUID storage also helped on the larger datasets we tested. For the performance experiment, we learned that reading the query plan matters: a faster time is interesting, but knowing that one query avoids a filesort helps explain it.
 
 ## Benchmark Environment
